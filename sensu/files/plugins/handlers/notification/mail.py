@@ -5,6 +5,7 @@ from optparse import OptionParser
 import email
 from email.mime.text import MIMEText
 import json
+import time
 from datetime import datetime
 try:
     from sensu import Handler
