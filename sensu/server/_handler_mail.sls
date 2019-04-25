@@ -9,6 +9,8 @@
   - watch_in:
     - service: service_sensu_server
     - service: service_sensu_api
+  - require_in:
+    - file: sensu_conf_dir_clean
 
 /etc/sensu/conf.d/handler_mail.json:
   file.managed:
@@ -20,10 +22,13 @@
   - watch_in:
     - service: service_sensu_server
     - service: service_sensu_api
+  - require_in:
+    - file: sensu_conf_dir_clean
 
 /etc/sensu/handlers/mail.py:
   file.managed:
   - source: salt://sensu/files/plugins/handlers/notification/mail.py
+  - makedirs: True
   - mode: 700
   - user: sensu
   - watch_in:

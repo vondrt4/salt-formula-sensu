@@ -3,6 +3,7 @@
 
 include:
 - sensu._common
+- sensu.client
 
 sensu_server_packages:
   pkg.installed:
@@ -16,10 +17,10 @@ sensu_server_pip:
   - require:
     - pkg: sensu_server_packages
 
-purge_sensu_conf_dir:
-  file.directory:
-    - name: /etc/sensu/conf.d/
-    - clean: True
+/etc/sensu/config.json:
+  file.managed:
+  - contents: "{}"
+  - replace: false
 
 {%- if server.mine_checks %}
 
@@ -39,6 +40,8 @@ purge_sensu_conf_dir:
     check: {{ check|yaml }}
   - require:
     - pkg: sensu_server_packages
+  - require_in:
+    - file: sensu_conf_dir_clean
   - watch_in:
     - service: service_sensu_server
     - service: service_sensu_api
@@ -59,6 +62,8 @@ purge_sensu_conf_dir:
     check_name: "{{ check.name }}"
   - require:
     - pkg: sensu_server_packages
+  - require_in:
+    - file: sensu_conf_dir_clean
   - watch_in:
     - service: service_sensu_server
     - service: service_sensu_api
@@ -75,7 +80,25 @@ purge_sensu_conf_dir:
     mutator_name: "{{ mutator.name }}"
   - require:
     - file: /etc/sensu/config.json
-    - pkg: sensu_packages
+    - pkg: sensu_server_packages
+  - require_in:
+    - file: sensu_conf_dir_clean
+  - watch_in:
+    - service: service_sensu_server
+    - service: service_sensu_api
+
+{%- endfor %}
+
+{%- for filter_name, filter in server.get('filter', {}).iteritems() %}
+
+/etc/sensu/conf.d/filter_{{ filter_name }}.json:
+  file.managed:
+  - source: salt://sensu/files/filter.json
+  - template: jinja
+  - defaults:
+    filter_name: "{{ filter_name }}"
+  - require:
+    - pkg: sensu_server_packages
   - watch_in:
     - service: service_sensu_server
     - service: service_sensu_api
@@ -84,7 +107,7 @@ purge_sensu_conf_dir:
 
 {%- for handler_name, handler in server.get('handler', {}).iteritems() %}
 
-{%- if handler_name in ['default', 'flapjack', 'mail', 'sccd', 'stdout', 'statsd', 'slack']  %}
+{%- if handler.get('enabled', True) and handler_name in ['default', 'flapjack', 'mail', 'sccd', 'stdout', 'statsd', 'slack', 'pipe', 'sfdc', 'pagerduty', 'hipchat'] %}
 
 {%- include "sensu/server/_handler_"+handler_name+".sls" %}
 
@@ -99,6 +122,8 @@ purge_sensu_conf_dir:
   - mode: 644
   - require:
     - file: /etc/sensu
+  - require_in:
+    - file: sensu_conf_dir_clean
   - watch_in:
     - service: service_sensu_server
     - service: service_sensu_api
@@ -110,9 +135,19 @@ purge_sensu_conf_dir:
   - mode: 644
   - require:
     - file: /etc/sensu
+  - require_in:
+    - file: sensu_conf_dir_clean
   - watch_in:
     - service: service_sensu_server
     - service: service_sensu_api
+
+sensu_conf_dir_clean:
+  file.directory:
+    - name: /etc/sensu/conf.d/
+#    - clean: True
+    - require:
+      - file: /etc/sensu/conf.d/client.json
+      - file: /etc/sensu/conf.d/rabbitmq.json
 
 service_sensu_server:
   service.running:

@@ -1,6 +1,6 @@
 {% set server = salt['grains.filter_by']({
     'Debian': {
-        'pkgs': ['sensu', 'python-pip'],
+        'pkgs': ['sensu', 'python-pip', 'ruby-bunny'],
         'mine_checks': True,
     },
     'RedHat': {
@@ -11,11 +11,11 @@
 
 {% set client = salt['grains.filter_by']({
     'Debian': {
-        'pkgs': ['sensu', 'nagios-plugins-basic', 'curl'],
+        'pkgs': ['sensu', 'nagios-plugins-basic', 'curl', 'bc'],
         'plugin': {}
     },
     'RedHat': {
-        'pkgs': ['sensu', 'nagios-plugins-ping', 'nagios-plugins-procs', 'nagios-plugins-load', 'nagios-plugins-swap', 'nagios-plugins-ntp', 'nagios-plugins-http', 'nagios-plugins-disk', 'net-snmp-utils', 'pynag'],
+        'pkgs': ['sensu', 'nagios-plugins-ping', 'nagios-plugins-procs', 'nagios-plugins-load', 'nagios-plugins-swap', 'nagios-plugins-ntp', 'nagios-plugins-http', 'nagios-plugins-disk', 'net-snmp-utils', 'pynag', 'bc'],
         'plugin': {}
     },
 }, merge=salt['pillar.get']('sensu:client')) %}

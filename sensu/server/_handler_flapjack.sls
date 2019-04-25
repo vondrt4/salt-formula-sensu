@@ -8,6 +8,8 @@
   - watch_in:
     - service: service_sensu_server
     - service: service_sensu_api
+  - require_in:
+    - file: sensu_conf_dir_clean
 
 /etc/sensu/extensions/handlers/flapjack.rb:
   file.managed:

@@ -1,9 +1,16 @@
 {%- from "linux/map.jinja" import system with context -%}
 {%- from "linux/map.jinja" import network with context -%}
 {%- from "sensu/map.jinja" import client with context -%}
+
+{%- set unsubscribed = client.get('unsubscribe', []) -%}
+
 {
   "client": {
+    {%- if client.get('use_shortname', False) %}
+    "name": "{{ system.name }}",
+    {%- else %}
     "name": "{{ system.name }}.{{ system.domain }}",
+    {%- endif %}
     "hostname": "{{ system.name }}",
     "fqdn": "{{ system.name }}.{{ system.domain }}",
     "cluster": "{{ pillar.linux.system.cluster }}",
@@ -32,6 +39,11 @@
     {%- if pillar.get('keystone', {}).client is defined %}
     {%- if pillar.keystone.client.enabled %}
     {%- from "keystone/map.jinja" import client with context %}
+    {%- if client.server.tenant is defined
+        and client.server.user is defined
+        and client.server.password is defined
+        and client.server.host is defined
+        and client.server.public_port is defined %}
     "openstack": {
       "tenant": "{{ client.server.tenant }}",
       "user": "{{ client.server.user }}",
@@ -41,16 +53,20 @@
     },
     {%- endif %}
     {%- endif %}
+    {%- endif %}
     "keepalive": {
       "thresholds": {
         "warning": {{ client.get('keepalive_warning', '120') }},
-        "critical": {{ client.get('keepalive_critical', '180') }}
+        "critical": {{ client.get('keepalive_critical', '180') }},
+        "refresh": 86400
       },
       "handler": "default"
     },
     "subscriptions": [
-      {% for key in grains.roles %}
+      {%- for key in grains.roles %}
+      {%- if key not in unsubscribed %}
       "local-{{ key|replace('.', '-') }}",
+      {%- endif %}
       {%- endfor %}
       {%- if pillar.sensu.server is defined %}
       "remote-internet",
